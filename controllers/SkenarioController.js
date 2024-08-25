@@ -1,0 +1,72 @@
+const Skenario = require("../models/SkenarioModel.js");
+
+// Membuat data skenario
+exports.createSkenario = async (req, res) => {
+  const { judul, deskripsi } = req.body;
+  const filePath = req.file ? req.file.path : null;
+
+  try {
+    const skenario = await Skenario.create({
+      judul,
+      deskripsi,
+      file_path: filePath,
+    });
+    res.status(201).json(skenario);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Mendapatkan semua data skenario
+exports.getSkenario = async (req, res) => {
+  try {
+    const skenarios = await Skenario.findAll();
+    res.status(200).json(skenarios);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Mendapatkan data skenario berdasarkan ID
+exports.getSkenarioById = async (req, res) => {
+  try {
+    const skenario = await Skenario.findByPk(req.params.id);
+    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+    res.status(200).json(skenario);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update data skenario
+exports.updateSkenario = async (req, res) => {
+  const { judul, deskripsi } = req.body;
+  const filePath = req.file ? req.file.path : null;
+
+  try {
+    const skenario = await Skenario.findByPk(req.params.id);
+    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+
+    await skenario.update({
+      judul,
+      deskripsi,
+      file_path: filePath || skenario.file_path,
+    });
+    res.status(200).json(skenario);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Menghapus data skenario
+exports.deleteSkenario = async (req, res) => {
+  try {
+    const skenario = await Skenario.findByPk(req.params.id);
+    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+
+    await skenario.destroy();
+    res.status(200).json({ message: "Skenario berhasil dihapus" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
