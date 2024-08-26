@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const KalenderAcara = require("../models/KalenderAcaraModel.js");
 
 // Membuat data KalenderAcara
@@ -81,10 +83,20 @@ exports.deleteKalenderAcara = async (req, res) => {
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
+
     if (!kalenderAcara)
-      return res
-        .status(404)
-        .json({ message: "Kalender Acara tidak ditemukan" });
+      return res.status(404).json({ message: "Kalender Acara tidak ditemukan" });
+
+    const filePath = kalenderAcara.file_path;
+
+    if (filePath) {
+      const absolutePath = path.join(__dirname, '../uploads', filePath.replace(/^\/uploads\//, ''));
+      fs.unlink(absolutePath, (err) => {
+        if (err) {
+          console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
+        }
+      });
+    }
 
     await kalenderAcara.destroy();
     res.status(200).json({ message: "Kalender Acara berhasil dihapus" });

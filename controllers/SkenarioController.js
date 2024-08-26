@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const Skenario = require("../models/SkenarioModel.js");
 
 // Membuat data skenario
@@ -69,6 +71,18 @@ exports.deleteSkenario = async (req, res) => {
     const skenario = await Skenario.findByPk(req.params.id);
     if (!skenario)
       return res.status(404).json({ message: "Skenario tidak ditemukan" });
+
+    const filePath = skenario.file_path;
+
+    if (filePath) {
+      const absolutePath = path.join(__dirname, '../uploads', filePath.replace(/^\/uploads\//, ''));
+      fs.unlink(absolutePath, (err) => {
+        if (err) {
+          console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
+          return res.status(500).json({ message: `Gagal menghapus file: ${err.message}` });
+        }
+      });
+    }
 
     await skenario.destroy();
     res.status(200).json({ message: "Skenario berhasil dihapus" });

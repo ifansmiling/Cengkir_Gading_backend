@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const DailyExercise = require("../models/DailyExerciseModel.js");
 
 // Membuat data DailyExercise
@@ -76,9 +78,19 @@ exports.deleteDailyExercise = async (req, res) => {
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
     if (!dailyExercise)
-      return res
-        .status(404)
-        .json({ message: "Daily Exercise tidak ditemukan" });
+      return res.status(404).json({ message: "Daily Exercise tidak ditemukan" });
+
+    const filePath = dailyExercise.file_path;
+
+    if (filePath) {
+      const absolutePath = path.join(__dirname, '../uploads', filePath.replace(/^\/uploads\//, ''));
+      fs.unlink(absolutePath, (err) => {
+        if (err) {
+          console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
+          return res.status(500).json({ message: `Gagal menghapus file: ${err.message}` });
+        }
+      });
+    }
 
     await dailyExercise.destroy();
     res.status(200).json({ message: "Daily Exercise berhasil dihapus" });
