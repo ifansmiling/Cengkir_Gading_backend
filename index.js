@@ -12,7 +12,7 @@ const SkenarioRoute = require("./routes/SkenarioRoute.js");
 const EvaluasiKarakter = require("./routes/EvaluasiKarakterRoute.js");
 const DailyExercise = require("./routes/DailyExerciseRoute.js");
 const KalenderAcara = require("./routes/KalenderAcaraRoute.js");
-
+const AuthRoute = require("./routes/AuthRoute.js");
 
 dotenv.config();
 
@@ -78,6 +78,7 @@ app.use(SkenarioRoute);
 app.use(EvaluasiKarakter);
 app.use(DailyExercise);
 app.use(KalenderAcara);
+app.use(AuthRoute);
 
 app.listen(process.env.APP_PORT, () => {
   console.log(`Server up and running...`);
