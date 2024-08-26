@@ -4,13 +4,19 @@ const KalenderAcara = require("../models/KalenderAcaraModel.js");
 exports.createKalenderAcara = async (req, res) => {
   try {
     const { judul, deskripsi, tanggal_event } = req.body;
-    const file_path = req.file ? req.file.path : null; 
+
+    let file_path = req.file ? req.file.path.replace(/\\/g, "/") : null;
+    if (file_path) {
+      file_path = file_path.replace(/^.*\/uploads/, "/uploads");
+    }
+
     const newKalenderAcara = await KalenderAcara.create({
       judul,
       deskripsi,
       tanggal_event,
       file_path,
     });
+
     res.status(201).json(newKalenderAcara);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -33,7 +39,10 @@ exports.getKalenderAcaraById = async (req, res) => {
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
-    if (!kalenderAcara) return res.status(404).json({ message: "Kalender Acara tidak ditemukan" });
+    if (!kalenderAcara)
+      return res
+        .status(404)
+        .json({ message: "Kalender Acara tidak ditemukan" });
     res.status(200).json(kalenderAcara);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -47,10 +56,13 @@ exports.updateKalenderAcara = async (req, res) => {
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
-    if (!kalenderAcara) return res.status(404).json({ message: "Kalender Acara tidak ditemukan" });
+    if (!kalenderAcara)
+      return res
+        .status(404)
+        .json({ message: "Kalender Acara tidak ditemukan" });
 
     const file_path = req.file ? req.file.path : kalenderAcara.file_path;
-    
+
     kalenderAcara.judul = judul;
     kalenderAcara.deskripsi = deskripsi;
     kalenderAcara.tanggal_event = tanggal_event;
@@ -69,7 +81,10 @@ exports.deleteKalenderAcara = async (req, res) => {
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
-    if (!kalenderAcara) return res.status(404).json({ message: "Kalender Acara tidak ditemukan" });
+    if (!kalenderAcara)
+      return res
+        .status(404)
+        .json({ message: "Kalender Acara tidak ditemukan" });
 
     await kalenderAcara.destroy();
     res.status(200).json({ message: "Kalender Acara berhasil dihapus" });

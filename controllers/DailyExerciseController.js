@@ -3,8 +3,12 @@ const DailyExercise = require("../models/DailyExerciseModel.js");
 // Membuat data DailyExercise
 exports.createDailyExercise = async (req, res) => {
   const { judul, deskripsi, tipe } = req.body;
-  const filePath = req.file ? req.file.path : null;
-  
+  let filePath = req.file ? req.file.path.replace(/\\/g, "/") : null;
+
+  if (filePath) {
+    filePath = filePath.replace(/^.*\/uploads/, "/uploads");
+  }
+
   try {
     const dailyExercise = await DailyExercise.create({
       judul,
@@ -12,6 +16,7 @@ exports.createDailyExercise = async (req, res) => {
       file_path: filePath,
       tipe,
     });
+
     res.status(201).json(dailyExercise);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -32,7 +37,10 @@ exports.getDailyExercise = async (req, res) => {
 exports.getDailyExerciseById = async (req, res) => {
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise) return res.status(404).json({ message: "Daily Exercise tidak ditemukan" });
+    if (!dailyExercise)
+      return res
+        .status(404)
+        .json({ message: "Daily Exercise tidak ditemukan" });
     res.status(200).json(dailyExercise);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -46,7 +54,10 @@ exports.updateDailyExercise = async (req, res) => {
 
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise) return res.status(404).json({ message: "Daily Exercise tidak ditemukan" });
+    if (!dailyExercise)
+      return res
+        .status(404)
+        .json({ message: "Daily Exercise tidak ditemukan" });
 
     await dailyExercise.update({
       judul,
@@ -64,7 +75,10 @@ exports.updateDailyExercise = async (req, res) => {
 exports.deleteDailyExercise = async (req, res) => {
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise) return res.status(404).json({ message: "Daily Exercise tidak ditemukan" });
+    if (!dailyExercise)
+      return res
+        .status(404)
+        .json({ message: "Daily Exercise tidak ditemukan" });
 
     await dailyExercise.destroy();
     res.status(200).json({ message: "Daily Exercise berhasil dihapus" });

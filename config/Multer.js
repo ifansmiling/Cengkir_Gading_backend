@@ -5,16 +5,17 @@ const fs = require("fs");
 // Setup penyimpanan dengan dynamic destination
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    console.log("Original URL:", req.originalUrl);
     let uploadPath;
 
-    if (req.baseUrl.includes("skenario")) {
-      uploadPath = path.join(__dirname, "uploads/skenario");
-    } else if (req.baseUrl.includes("dailyExercise")) {
-      uploadPath = path.join(__dirname, "uploads/dailyExercise");
-    } else if (req.baseUrl.includes("kalenderAcara")) {
-      uploadPath = path.join(__dirname, "uploads/kalender_acara");
+    if (req.originalUrl.includes("daily-exercise")) {
+      uploadPath = path.join(__dirname, "../uploads/dailyExercise");
+    } else if (req.originalUrl.includes("skenario")) {
+      uploadPath = path.join(__dirname, "../uploads/skenario");
+    } else if (req.originalUrl.includes("kalenderAcara")) {
+      uploadPath = path.join(__dirname, "../uploads/kalender_acara");
     } else {
-      uploadPath = path.join(__dirname, "uploads/other");
+      uploadPath = path.join(__dirname, "../uploads/other");
     }
 
     if (!fs.existsSync(uploadPath)) {
@@ -30,13 +31,19 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 100 }, 
+  limits: { fileSize: 1024 * 1024 * 100 },
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif|pdf|docx|mp4/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    const allowedMimes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "video/mp4",
+    ];
 
-    if (mimetype && extname) {
+    if (allowedMimes.includes(file.mimetype)) {
       return cb(null, true);
     }
     cb("Error: File type not supported!");

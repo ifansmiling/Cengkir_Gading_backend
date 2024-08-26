@@ -12,7 +12,7 @@ const SkenarioRoute = require("./routes/SkenarioRoute.js");
 const EvaluasiKarakter = require("./routes/EvaluasiKarakterRoute.js");
 const DailyExercise = require("./routes/DailyExerciseRoute.js");
 const KalenderAcara = require("./routes/KalenderAcaraRoute.js");
-const multer = require("./config/Multer.js");
+
 
 dotenv.config();
 
@@ -33,6 +33,17 @@ if (!fs.existsSync(uploadDirdailyExercise)) {
 if (!fs.existsSync(uploadDirskenario)) {
   fs.mkdirSync(uploadDirskenario, { recursive: true });
 }
+
+// Database connection and synchronization
+// db.authenticate()
+//   .then(() => {
+//     console.log("Database connected");
+//     // Jalankan migrasi otomatis setiap kali server dijalankan
+//     db.sync()
+//       .then(() => console.log("Database synchronized"))
+//       .catch((err) => console.error("Error synchronizing database:", err));
+//   })
+//   .catch((err) => console.error("Error connecting to database:", err));
 
 app.use(
   session({

@@ -3,7 +3,10 @@ const Skenario = require("../models/SkenarioModel.js");
 // Membuat data skenario
 exports.createSkenario = async (req, res) => {
   const { judul, deskripsi } = req.body;
-  const filePath = req.file ? req.file.path : null;
+  let filePath = req.file ? req.file.path.replace(/\\/g, "/") : null;
+  if (filePath) {
+    filePath = filePath.replace(/^.*\/uploads/, "/uploads");
+  }
 
   try {
     const skenario = await Skenario.create({
@@ -31,7 +34,8 @@ exports.getSkenario = async (req, res) => {
 exports.getSkenarioById = async (req, res) => {
   try {
     const skenario = await Skenario.findByPk(req.params.id);
-    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+    if (!skenario)
+      return res.status(404).json({ message: "Skenario tidak ditemukan" });
     res.status(200).json(skenario);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -45,7 +49,8 @@ exports.updateSkenario = async (req, res) => {
 
   try {
     const skenario = await Skenario.findByPk(req.params.id);
-    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+    if (!skenario)
+      return res.status(404).json({ message: "Skenario tidak ditemukan" });
 
     await skenario.update({
       judul,
@@ -62,7 +67,8 @@ exports.updateSkenario = async (req, res) => {
 exports.deleteSkenario = async (req, res) => {
   try {
     const skenario = await Skenario.findByPk(req.params.id);
-    if (!skenario) return res.status(404).json({ message: "Skenario tidak ditemukan" });
+    if (!skenario)
+      return res.status(404).json({ message: "Skenario tidak ditemukan" });
 
     await skenario.destroy();
     res.status(200).json({ message: "Skenario berhasil dihapus" });

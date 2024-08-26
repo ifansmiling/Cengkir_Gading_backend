@@ -10,17 +10,17 @@ const {
 
 const router = express.Router();
 
-//Rute Get
-router.get("/daily-exercises", getDailyExercise);
-router.get("/daily-exercises/:id", getDailyExerciseById);
+// Rute Get
+router.get("/daily-exercise", getDailyExercise);
+router.get("/daily-exercise/:id", getDailyExerciseById);
 
-//Rute Post
-router.post("/daily-exercises", upload.single("file"), createDailyExercise);
+// Rute Post
+router.post("/daily-exercise", upload.single("file"), createDailyExercise);
 
-//Rute Put
-router.put("/daily-exercises/:id", upload.single("file"), updateDailyExercise);
+// Rute Put
+router.put("/daily-exercise/:id", upload.single("file"), updateDailyExercise);
 
-//Rute Delete
-router.delete("/daily-exercises/:id", deleteDailyExercise);
+// Rute Delete
+router.delete("/daily-exercise/:id", deleteDailyExercise);
 
 module.exports = router;
