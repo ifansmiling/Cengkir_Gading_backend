@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const KalenderAcara = require("../models/KalenderAcaraModel.js");
 
 // Membuat data KalenderAcara
@@ -28,8 +28,18 @@ exports.createKalenderAcara = async (req, res) => {
 // Mendapatkan semua data KalenderAcara
 exports.getKalenderAcara = async (req, res) => {
   try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     const kalenderAcaras = await KalenderAcara.findAll();
-    res.status(200).json(kalenderAcaras);
+
+    const response = kalenderAcaras.map((event) => {
+      return {
+        ...event.dataValues,
+        file_path: event.file_path ? `${baseUrl}${event.file_path}` : null,
+      };
+    });
+
+    res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -85,12 +95,18 @@ exports.deleteKalenderAcara = async (req, res) => {
     });
 
     if (!kalenderAcara)
-      return res.status(404).json({ message: "Kalender Acara tidak ditemukan" });
+      return res
+        .status(404)
+        .json({ message: "Kalender Acara tidak ditemukan" });
 
     const filePath = kalenderAcara.file_path;
 
     if (filePath) {
-      const absolutePath = path.join(__dirname, '../uploads', filePath.replace(/^\/uploads\//, ''));
+      const absolutePath = path.join(
+        __dirname,
+        "../uploads",
+        filePath.replace(/^\/uploads\//, "")
+      );
       fs.unlink(absolutePath, (err) => {
         if (err) {
           console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
