@@ -1,6 +1,6 @@
 const { DataTypes } = require("sequelize");
 const db = require("../config/Database.js");
-const User = require("./UsersModel.js"); 
+const User = require("./UsersModel.js");
 
 const EvaluasiKarakter = db.define(
   "evaluasi_karakter",
@@ -11,28 +11,36 @@ const EvaluasiKarakter = db.define(
       allowNull: false,
       primaryKey: true,
     },
-    evaluasi: {
-      type: DataTypes.TEXT, 
+    judul_evaluasi: {
+      type: DataTypes.STRING,
       allowNull: false,
+    },
+    evaluasi: {
+      type: DataTypes.TEXT,
+      allowNull: false,
+    },
+    kekurangan: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
     user_id: {
       type: DataTypes.UUID,
       allowNull: false,
       references: {
         model: User,
-        key: 'id',
+        key: "id",
       },
-      onDelete: 'CASCADE', 
+      onDelete: "CASCADE",
     },
   },
   {
     freezeTableName: true,
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
 // Definisikan relasi
-User.hasMany(EvaluasiKarakter, { foreignKey: 'user_id' });
-EvaluasiKarakter.belongsTo(User, { foreignKey: 'user_id' });
+User.hasMany(EvaluasiKarakter, { foreignKey: "user_id" });
+EvaluasiKarakter.belongsTo(User, { foreignKey: "user_id" });
 
 module.exports = EvaluasiKarakter;

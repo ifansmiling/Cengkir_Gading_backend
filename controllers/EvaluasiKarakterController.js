@@ -4,9 +4,11 @@ const User = require("../models/UsersModel.js");
 // Membuat data EvaluasiKarakter
 exports.createEvaluasiKarakter = async (req, res) => {
   try {
-    const { evaluasi, user_id } = req.body;
+    const { judul_evaluasi, evaluasi, kekurangan, user_id } = req.body;
     const newEvaluasiKarakter = await EvaluasiKarakter.create({
+      judul_evaluasi,
       evaluasi,
+      kekurangan,
       user_id,
     });
     res.status(201).json(newEvaluasiKarakter);
@@ -34,7 +36,10 @@ exports.getEvaluasiKarakterById = async (req, res) => {
       where: { id: req.params.id },
       include: [User],
     });
-    if (!evaluasiKarakter) return res.status(404).json({ message: "Evaluasi Karakter tidak ditemukan" });
+    if (!evaluasiKarakter)
+      return res
+        .status(404)
+        .json({ message: "Evaluasi Karakter tidak ditemukan" });
     res.status(200).json(evaluasiKarakter);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -44,13 +49,18 @@ exports.getEvaluasiKarakterById = async (req, res) => {
 // Update data EvaluasiKarakter
 exports.updateEvaluasiKarakter = async (req, res) => {
   try {
-    const { evaluasi, user_id } = req.body;
+    const { judul_evaluasi, evaluasi, kekurangan, user_id } = req.body;
     const evaluasiKarakter = await EvaluasiKarakter.findOne({
       where: { id: req.params.id },
     });
-    if (!evaluasiKarakter) return res.status(404).json({ message: "Evaluasi Karakter tidak ditemukan" });
+    if (!evaluasiKarakter)
+      return res
+        .status(404)
+        .json({ message: "Evaluasi Karakter tidak ditemukan" });
 
+    evaluasiKarakter.judul_evaluasi = judul_evaluasi;
     evaluasiKarakter.evaluasi = evaluasi;
+    evaluasiKarakter.kekurangan = kekurangan;
     evaluasiKarakter.user_id = user_id;
     await evaluasiKarakter.save();
 
@@ -66,7 +76,10 @@ exports.deleteEvaluasiKarakter = async (req, res) => {
     const evaluasiKarakter = await EvaluasiKarakter.findOne({
       where: { id: req.params.id },
     });
-    if (!evaluasiKarakter) return res.status(404).json({ message: "Evaluasi Karakter tidak ditemukan" });
+    if (!evaluasiKarakter)
+      return res
+        .status(404)
+        .json({ message: "Evaluasi Karakter tidak ditemukan" });
 
     await evaluasiKarakter.destroy();
     res.status(200).json({ message: "Evaluasi Karakter berhasil dihapus" });
