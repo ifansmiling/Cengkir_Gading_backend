@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const Skenario = require("../models/SkenarioModel.js");
 
 // Membuat data skenario
@@ -25,8 +25,20 @@ exports.createSkenario = async (req, res) => {
 // Mendapatkan semua data skenario
 exports.getSkenario = async (req, res) => {
   try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     const skenarios = await Skenario.findAll();
-    res.status(200).json(skenarios);
+
+    const response = skenarios.map((skenario) => {
+      return {
+        ...skenario.dataValues,
+        file_path: skenario.file_path
+          ? `${baseUrl}${skenario.file_path}`
+          : null,
+      };
+    });
+
+    res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -75,11 +87,17 @@ exports.deleteSkenario = async (req, res) => {
     const filePath = skenario.file_path;
 
     if (filePath) {
-      const absolutePath = path.join(__dirname, '../uploads', filePath.replace(/^\/uploads\//, ''));
+      const absolutePath = path.join(
+        __dirname,
+        "../uploads",
+        filePath.replace(/^\/uploads\//, "")
+      );
       fs.unlink(absolutePath, (err) => {
         if (err) {
           console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
-          return res.status(500).json({ message: `Gagal menghapus file: ${err.message}` });
+          return res
+            .status(500)
+            .json({ message: `Gagal menghapus file: ${err.message}` });
         }
       });
     }
