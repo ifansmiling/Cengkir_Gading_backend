@@ -5,7 +5,6 @@ const fs = require("fs");
 // Setup penyimpanan dengan dynamic destination
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    console.log("Original URL:", req.originalUrl);
     let uploadPath;
 
     if (req.originalUrl.includes("daily-exercise")) {

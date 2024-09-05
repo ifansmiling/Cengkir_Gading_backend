@@ -19,17 +19,17 @@ const DailyExercise = db.define(
       allowNull: false,
     },
     file_path: {
-      type: DataTypes.STRING,  
+      type: DataTypes.STRING,
       allowNull: false,
     },
     tipe: {
-      type: DataTypes.ENUM("artikel", "buku", "video", "gambar"), 
+      type: DataTypes.ENUM("Artikel", "Buku","Teori-teori Akting", "Video Tutorial", "Gambar"),
       allowNull: false,
     },
   },
   {
     freezeTableName: true,
-    timestamps: true,  
+    timestamps: true,
   }
 );
 
