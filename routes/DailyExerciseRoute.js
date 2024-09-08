@@ -1,5 +1,5 @@
 const express = require("express");
-const upload = require("../config/Multer.js");
+const uploadMultiple = require("../config/Multer.js"); // Menggunakan konfigurasi untuk multiple file
 const {
   createDailyExercise,
   getDailyExercise,
@@ -15,10 +15,10 @@ router.get("/daily-exercise", getDailyExercise);
 router.get("/daily-exercise/:id", getDailyExerciseById);
 
 // Rute Post
-router.post("/daily-exercise", upload.single("file"), createDailyExercise);
+router.post("/daily-exercise", uploadMultiple, createDailyExercise);
 
 // Rute Put
-router.put("/daily-exercise/:id", upload.single("file"), updateDailyExercise);
+router.put("/daily-exercise/:id", uploadMultiple, updateDailyExercise);
 
 // Rute Delete
 router.delete("/daily-exercise/:id", deleteDailyExercise);

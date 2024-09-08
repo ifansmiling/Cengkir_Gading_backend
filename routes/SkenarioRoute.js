@@ -1,5 +1,5 @@
 const express = require("express");
-const upload = require("../config/Multer.js"); 
+const uploadMultiple = require("../config/Multer.js"); 
 const {
   createSkenario,
   getSkenario,
@@ -10,17 +10,17 @@ const {
 
 const router = express.Router();
 
-//Rute Get
+// Rute Get
 router.get("/skenario", getSkenario); 
 router.get("/skenario/:id", getSkenarioById); 
 
-//Rute Post
-router.post("/skenario", upload.single("file"), createSkenario); 
+// Rute Post
+router.post("/skenario", uploadMultiple, createSkenario); 
 
-//Rute Put
-router.put("/skenario/:id", upload.single("file"), updateSkenario);
+// Rute Put
+router.put("/skenario/:id", uploadMultiple, updateSkenario);
 
-//Rute Delete
+// Rute Delete
 router.delete("/skenario/:id", deleteSkenario);
 
 module.exports = router;

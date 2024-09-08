@@ -1,5 +1,5 @@
 const express = require("express");
-const upload = require("../config/Multer.js"); 
+const uploadMultiple = require("../config/Multer.js"); 
 const {
   createKalenderAcara,
   getKalenderAcara,
@@ -10,17 +10,17 @@ const {
 
 const router = express.Router();
 
-//Rute Get
+// Rute Get
 router.get("/kalenderAcara", getKalenderAcara);
 router.get("/kalenderAcara/:id", getKalenderAcaraById);
 
-//Rute Post
-router.post("/kalenderAcara", upload.single("file"), createKalenderAcara);
+// Rute Post
+router.post("/kalenderAcara", uploadMultiple, createKalenderAcara);
 
-//Rute Put
-router.put("/kalenderAcara/:id", upload.single("file"), updateKalenderAcara);
+// Rute Put
+router.put("/kalenderAcara/:id", uploadMultiple, updateKalenderAcara);
 
-//Rute Delete
+// Rute Delete
 router.delete("/kalenderAcara/:id", deleteKalenderAcara);
 
 module.exports = router;

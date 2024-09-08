@@ -7,20 +7,25 @@ exports.createKalenderAcara = async (req, res) => {
   try {
     const { judul, deskripsi, tanggal_event } = req.body;
 
-    let file_path = req.file ? req.file.path.replace(/\\/g, "/") : null;
-    if (file_path) {
-      file_path = file_path.replace(/^.*\/uploads/, "/uploads");
+    let file_paths = [];
+    if (req.files && req.files.length > 0) {
+      file_paths = req.files.map((file) =>
+        file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
+      );
     }
+
+    const file_paths_string = file_paths.join(",");
 
     const newKalenderAcara = await KalenderAcara.create({
       judul,
       deskripsi,
       tanggal_event,
-      file_path,
+      file_paths: file_paths_string,
     });
 
     res.status(201).json(newKalenderAcara);
   } catch (error) {
+    console.error("Error creating KalenderAcara:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -33,9 +38,14 @@ exports.getKalenderAcara = async (req, res) => {
     const kalenderAcaras = await KalenderAcara.findAll();
 
     const response = kalenderAcaras.map((event) => {
+      const file_paths_array = event.file_paths
+        ? event.file_paths.split(",")
+        : [];
       return {
         ...event.dataValues,
-        file_path: event.file_path ? `${baseUrl}${event.file_path}` : null,
+        file_paths: file_paths_array.map((filePath) => {
+          return `${baseUrl}${filePath.replace(/"/g, "")}`;
+        }),
       };
     });
 
@@ -45,18 +55,43 @@ exports.getKalenderAcara = async (req, res) => {
   }
 };
 
-// Mendapatkan data Kalender Acara berdakasarkan ID
+// Mendapatkan data KalenderAcara berdasarkan ID
 exports.getKalenderAcaraById = async (req, res) => {
   try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
+
     if (!kalenderAcara)
       return res
         .status(404)
         .json({ message: "Kalender Acara tidak ditemukan" });
-    res.status(200).json(kalenderAcara);
+
+    console.log("Kalender Acara:", kalenderAcara);
+
+    let file_paths_array;
+    if (Array.isArray(kalenderAcara.file_paths)) {
+      file_paths_array = kalenderAcara.file_paths.map((filePath) => {
+        return `${baseUrl}${filePath.replace(/"/g, "").replace(/\\/g, "/")}`;
+      });
+    } else if (typeof kalenderAcara.file_paths === "string") {
+      file_paths_array = kalenderAcara.file_paths.split(",").map((filePath) => {
+        return `${baseUrl}${filePath.replace(/"/g, "").replace(/\\/g, "/")}`;
+      });
+    } else {
+      file_paths_array = [];
+    }
+
+    console.log("File Paths Array:", file_paths_array);
+
+    res.status(200).json({
+      ...kalenderAcara.dataValues,
+      file_paths: file_paths_array,
+    });
   } catch (error) {
+    console.error("Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -65,24 +100,51 @@ exports.getKalenderAcaraById = async (req, res) => {
 exports.updateKalenderAcara = async (req, res) => {
   try {
     const { judul, deskripsi, tanggal_event } = req.body;
+
+    console.log("Request body:", req.body);
+    console.log("Files:", req.files);
+
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
+
     if (!kalenderAcara)
       return res
         .status(404)
         .json({ message: "Kalender Acara tidak ditemukan" });
 
-    const file_path = req.file ? req.file.path : kalenderAcara.file_path;
+    if (kalenderAcara.file_paths) {
+      const oldFilePaths = kalenderAcara.file_paths.split(",");
+      oldFilePaths.forEach((filePath) => {
+        const fullPath = path.join(
+          __dirname,
+          "..",
+          "uploads",
+          filePath.replace(/^\/uploads\//, "")
+        );
+        console.log("Deleting file:", fullPath);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      });
+    }
+
+    let file_paths = [];
+    if (req.files && req.files.length > 0) {
+      file_paths = req.files.map((file) =>
+        file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
+      );
+    }
 
     kalenderAcara.judul = judul;
     kalenderAcara.deskripsi = deskripsi;
     kalenderAcara.tanggal_event = tanggal_event;
-    kalenderAcara.file_path = file_path;
+    kalenderAcara.file_paths = file_paths.join(",");
     await kalenderAcara.save();
 
     res.status(200).json(kalenderAcara);
   } catch (error) {
+    console.error("Error updating Kalender Acara:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -99,18 +161,21 @@ exports.deleteKalenderAcara = async (req, res) => {
         .status(404)
         .json({ message: "Kalender Acara tidak ditemukan" });
 
-    const filePath = kalenderAcara.file_path;
-
-    if (filePath) {
-      const absolutePath = path.join(
-        __dirname,
-        "../uploads",
-        filePath.replace(/^\/uploads\//, "")
-      );
-      fs.unlink(absolutePath, (err) => {
-        if (err) {
-          console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
-        }
+    if (kalenderAcara.file_paths && kalenderAcara.file_paths.length > 0) {
+      const file_paths_array = kalenderAcara.file_paths.split(",");
+      file_paths_array.forEach((filePath) => {
+        const absolutePath = path.join(
+          __dirname,
+          "../uploads",
+          filePath.replace(/^\/uploads\//, "")
+        );
+        fs.unlink(absolutePath, (err) => {
+          if (err) {
+            console.error(
+              `Gagal menghapus file ${absolutePath}: ${err.message}`
+            );
+          }
+        });
       });
     }
 

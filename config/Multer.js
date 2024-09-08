@@ -17,6 +17,7 @@ const storage = multer.diskStorage({
       uploadPath = path.join(__dirname, "../uploads/other");
     }
 
+    // Membuat folder jika belum ada
     if (!fs.existsSync(uploadPath)) {
       fs.mkdirSync(uploadPath, { recursive: true });
     }
@@ -30,7 +31,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1024 * 1024 * 100 },
+  limits: { fileSize: 1024 * 1024 * 100 }, // limit file 100MB
   fileFilter: (req, file, cb) => {
     const allowedMimes = [
       "image/jpeg",
@@ -49,4 +50,7 @@ const upload = multer({
   },
 });
 
-module.exports = upload;
+// Gunakan array untuk multiple file upload
+const uploadMultiple = upload.array("images", 10); // "images" adalah nama field di form, maksimal 10 file
+
+module.exports = uploadMultiple;

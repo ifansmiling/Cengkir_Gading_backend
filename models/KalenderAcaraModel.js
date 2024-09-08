@@ -19,12 +19,12 @@ const KalenderAcara = db.define(
       allowNull: false,
     },
     tanggal_event: {
-      type: DataTypes.DATE, 
+      type: DataTypes.DATE,
       allowNull: false,
     },
-    file_path: {
-      type: DataTypes.STRING,
-      allowNull: true, 
+    file_paths: {
+      type: DataTypes.JSON, // Menyimpan array JSON sebagai string
+      allowNull: true,
     },
   },
   {
