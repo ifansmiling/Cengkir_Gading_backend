@@ -101,20 +101,27 @@ exports.updateKalenderAcara = async (req, res) => {
   try {
     const { judul, deskripsi, tanggal_event } = req.body;
 
-    console.log("Request body:", req.body);
-    console.log("Files:", req.files);
-
     const kalenderAcara = await KalenderAcara.findOne({
       where: { id: req.params.id },
     });
 
-    if (!kalenderAcara)
+    if (!kalenderAcara) {
       return res
         .status(404)
         .json({ message: "Kalender Acara tidak ditemukan" });
+    }
 
-    if (kalenderAcara.file_paths) {
-      const oldFilePaths = kalenderAcara.file_paths.split(",");
+    const oldFilePaths = kalenderAcara.file_paths
+      ? kalenderAcara.file_paths.split(",")
+      : [];
+
+    let file_paths = [];
+
+    if (req.files && req.files.length > 0) {
+      file_paths = req.files.map((file) =>
+        file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
+      );
+
       oldFilePaths.forEach((filePath) => {
         const fullPath = path.join(
           __dirname,
@@ -127,13 +134,8 @@ exports.updateKalenderAcara = async (req, res) => {
           fs.unlinkSync(fullPath);
         }
       });
-    }
-
-    let file_paths = [];
-    if (req.files && req.files.length > 0) {
-      file_paths = req.files.map((file) =>
-        file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
-      );
+    } else {
+      file_paths = oldFilePaths;
     }
 
     kalenderAcara.judul = judul;

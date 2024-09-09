@@ -18,8 +18,8 @@ const Skenario = db.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    file_path: {
-      type: DataTypes.STRING,
+    file_paths: {
+      type: DataTypes.TEXT,
       allowNull: false,
     },
   },
