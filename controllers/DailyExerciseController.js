@@ -5,17 +5,19 @@ const DailyExercise = require("../models/DailyExerciseModel.js");
 // Membuat data DailyExercise
 exports.createDailyExercise = async (req, res) => {
   const { judul, deskripsi, tipe } = req.body;
-  let filePath = req.file ? req.file.path.replace(/\\/g, "/") : null;
+  let filePaths = [];
 
-  if (filePath) {
-    filePath = filePath.replace(/^.*\/uploads/, "/uploads");
+  if (req.files && req.files.length > 0) {
+    filePaths = req.files.map((file) =>
+      file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
+    );
   }
 
   try {
     const dailyExercise = await DailyExercise.create({
       judul,
       deskripsi,
-      file_path: filePath,
+      file_path: filePaths.join(","),
       tipe,
     });
 
@@ -25,7 +27,6 @@ exports.createDailyExercise = async (req, res) => {
   }
 };
 
-// Mendapatkan semua data DailyExercise
 exports.getDailyExercise = async (req, res) => {
   try {
     const baseUrl = `${req.protocol}://${req.get("host")}`;
@@ -36,7 +37,7 @@ exports.getDailyExercise = async (req, res) => {
       return {
         ...exercise.dataValues,
         file_path: exercise.file_path
-          ? `${baseUrl}${exercise.file_path}`
+          ? exercise.file_path.split(",").map((path) => `${baseUrl}${path}`)
           : null,
       };
     });
@@ -50,12 +51,23 @@ exports.getDailyExercise = async (req, res) => {
 // Mendapatkan data DailyExercise berdasarkan ID
 exports.getDailyExerciseById = async (req, res) => {
   try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise)
+
+    if (!dailyExercise) {
       return res
         .status(404)
         .json({ message: "Daily Exercise tidak ditemukan" });
-    res.status(200).json(dailyExercise);
+    }
+
+    const response = {
+      ...dailyExercise.dataValues,
+      file_path: dailyExercise.file_path
+        ? dailyExercise.file_path.split(",").map((path) => `${baseUrl}${path}`)
+        : [],
+    };
+
+    res.status(200).json(response);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -64,21 +76,52 @@ exports.getDailyExerciseById = async (req, res) => {
 // Update data DailyExercise
 exports.updateDailyExercise = async (req, res) => {
   const { judul, deskripsi, tipe } = req.body;
-  const filePath = req.file ? req.file.path : null;
+
+  const newFilePaths = req.files
+    ? req.files.map((file) =>
+        file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
+      )
+    : [];
 
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise)
+    if (!dailyExercise) {
       return res
         .status(404)
         .json({ message: "Daily Exercise tidak ditemukan" });
+    }
+
+    const oldFilePathsArray = dailyExercise.file_path
+      ? dailyExercise.file_path.split(",")
+      : [];
+
+    if (newFilePaths.length > 0) {
+      oldFilePathsArray.forEach((filePath) => {
+        const absolutePath = path.join(
+          __dirname,
+          "../uploads",
+          filePath.replace(/^\/uploads\//, "")
+        );
+        fs.unlink(absolutePath, (err) => {
+          if (err) {
+            console.error(
+              `Gagal menghapus file ${absolutePath}: ${err.message}`
+            );
+          }
+        });
+      });
+    }
 
     await dailyExercise.update({
       judul,
       deskripsi,
-      file_path: filePath || dailyExercise.file_path,
+      file_path:
+        newFilePaths.length > 0
+          ? newFilePaths.join(",")
+          : dailyExercise.file_path,
       tipe,
     });
+
     res.status(200).json(dailyExercise);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -89,32 +132,51 @@ exports.updateDailyExercise = async (req, res) => {
 exports.deleteDailyExercise = async (req, res) => {
   try {
     const dailyExercise = await DailyExercise.findByPk(req.params.id);
-    if (!dailyExercise)
+    if (!dailyExercise) {
+      console.log("Exercise tidak ditemukan");
       return res
         .status(404)
         .json({ message: "Daily Exercise tidak ditemukan" });
+    }
 
-    const filePath = dailyExercise.file_path;
+    let filePathArray = [];
 
-    if (filePath) {
-      const absolutePath = path.join(
-        __dirname,
-        "../uploads",
-        filePath.replace(/^\/uploads\//, "")
-      );
-      fs.unlink(absolutePath, (err) => {
-        if (err) {
-          console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
-          return res
-            .status(500)
-            .json({ message: `Gagal menghapus file: ${err.message}` });
-        }
+    if (typeof dailyExercise.file_path === "string") {
+      try {
+        filePathArray = JSON.parse(dailyExercise.file_path);
+      } catch (error) {
+        filePathArray = [dailyExercise.file_path];
+      }
+    } else if (Array.isArray(dailyExercise.file_path)) {
+      filePathArray = dailyExercise.file_path;
+    }
+
+    if (filePathArray.length > 0) {
+      filePathArray.forEach((filePath) => {
+        const absolutePath = path.join(
+          __dirname,
+          "../uploads",
+          filePath.replace(/^\/uploads\//, "")
+        );
+        fs.unlink(absolutePath, (err) => {
+          if (err) {
+            console.error(
+              `Gagal menghapus file ${absolutePath}: ${err.message}`
+            );
+          } else {
+            console.log(`File ${absolutePath} berhasil dihapus`);
+          }
+        });
       });
     }
 
     await dailyExercise.destroy();
-    res.status(200).json({ message: "Daily Exercise berhasil dihapus" });
+    console.log("Exercise berhasil dihapus dari database");
+    res
+      .status(200)
+      .json({ message: "Daily Exercise dan file berhasil dihapus" });
   } catch (error) {
+    console.error("Error deleting exercise:", error.message);
     res.status(500).json({ error: error.message });
   }
 };
