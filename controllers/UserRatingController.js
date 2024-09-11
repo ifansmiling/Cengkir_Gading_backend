@@ -6,12 +6,31 @@ const Drama = require("../models/DramaModel.js");
 exports.createUserRating = async (req, res) => {
   const { rating, user_id, parameter_id } = req.body;
   try {
-    const userRating = await UserRating.create({
-      rating,
-      user_id,
-      parameter_id,
-    });
-    res.status(201).json(userRating);
+    if (Array.isArray(parameter_id)) {
+      const userRatings = await Promise.all(
+        parameter_id.map(async (paramId) => {
+          return await UserRating.create({
+            rating,
+            user_id,
+            parameter_id: paramId,
+          });
+        })
+      );
+      res.status(201).json({
+        message: "Rating berhasil dibuat untuk beberapa parameter.",
+        data: userRatings,
+      });
+    } else {
+      const userRating = await UserRating.create({
+        rating,
+        user_id,
+        parameter_id,
+      });
+      res.status(201).json({
+        message: "Rating berhasil dibuat.",
+        data: userRating,
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -20,13 +39,30 @@ exports.createUserRating = async (req, res) => {
 // Mendapatkan semua data UserRating
 exports.getUserRating = async (req, res) => {
   try {
+    const { parameter_ids } = req.query;
+
+    const whereCondition = parameter_ids
+      ? { parameter_id: parameter_ids.split(",") }
+      : {};
+
     const userRatings = await UserRating.findAll({
+      where: whereCondition,
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
         { model: Drama, attributes: ["nama"] },
       ],
     });
-    res.status(200).json(userRatings);
+
+    if (userRatings.length === 0) {
+      return res.status(404).json({
+        message: "Tidak ada rating ditemukan.",
+      });
+    }
+
+    res.status(200).json({
+      message: "Rating berhasil diambil.",
+      data: userRatings,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -35,15 +71,61 @@ exports.getUserRating = async (req, res) => {
 // Mendapatkan data user rating berdasarkan ID
 exports.getUserRatingById = async (req, res) => {
   try {
-    const userRating = await UserRating.findByPk(req.params.id, {
+    const { ids } = req.query;
+
+    if (!ids) {
+      return res.status(400).json({ message: "IDs diperlukan" });
+    }
+
+    const idArray = ids.split(",");
+
+    const userRatings = await UserRating.findAll({
+      where: {
+        id: idArray,
+      },
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
         { model: Drama, attributes: ["nama"] },
       ],
     });
-    if (!userRating)
+
+    if (userRatings.length === 0) {
       return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
-    res.status(200).json(userRating);
+    }
+
+    res.status(200).json(userRatings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//Mendpatakan user rating berdasarkan id dari user
+exports.getUserRatingByUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "User ID harus disediakan." });
+    }
+
+    const userRatings = await UserRating.findAll({
+      where: { user_id: id },
+      include: [
+        { model: User, attributes: ["nama", "email", "nim"] },
+        { model: Drama, attributes: ["nama"] },
+      ],
+    });
+
+    if (userRatings.length === 0) {
+      return res.status(404).json({
+        message: "Rating tidak ditemukan untuk user ID yang diberikan.",
+      });
+    }
+
+    res.status(200).json({
+      message: "Rating berhasil diambil.",
+      data: userRatings,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

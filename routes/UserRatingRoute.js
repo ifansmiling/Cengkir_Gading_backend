@@ -3,6 +3,7 @@ const {
   createUserRating,
   getUserRating,
   getUserRatingById,
+  getUserRatingByUser,
   updateUserRating,
   deleteUserRating,
 } = require("../controllers/UserRatingController.js");
@@ -12,6 +13,7 @@ const router = express.Router();
 //Rute Get
 router.get("/user-rating", getUserRating);
 router.get("/user-rating/:id", getUserRatingById);
+router.get("/user-rating/user/:id", getUserRatingByUser);
 
 //Rute Post
 router.post("/user-rating", createUserRating);

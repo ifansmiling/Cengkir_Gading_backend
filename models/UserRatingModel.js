@@ -1,7 +1,7 @@
 const { DataTypes } = require("sequelize");
 const db = require("../config/Database.js");
-const User = require("./UsersModel.js");  
-const Drama = require("./DramaModel.js");  
+const User = require("./UsersModel.js");
+const Drama = require("./DramaModel.js");
 
 const UserRating = db.define(
   "user_rating",
@@ -13,7 +13,7 @@ const UserRating = db.define(
       primaryKey: true,
     },
     rating: {
-      type: DataTypes.INTEGER, 
+      type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
         min: 1,
@@ -25,30 +25,30 @@ const UserRating = db.define(
       allowNull: false,
       references: {
         model: User,
-        key: 'id',
+        key: "id",
       },
-      onDelete: 'CASCADE',
+      onDelete: "CASCADE",
     },
     parameter_id: {
-      type: DataTypes.UUID,
+      type: DataTypes.UUID, // Ubah dari JSON menjadi UUID
       allowNull: false,
       references: {
-        model: Drama,
-        key: 'id',
+        model: Drama, // Merujuk ke model Drama
+        key: 'id', // Kolom id di tabel Drama
       },
       onDelete: 'CASCADE',
-    },
+    }
   },
   {
     freezeTableName: true,
-    timestamps: true, 
+    timestamps: true,
   }
 );
 
 //relasi
-User.hasMany(UserRating, { foreignKey: 'user_id' });
-Drama.hasMany(UserRating, { foreignKey: 'parameter_id' });
-UserRating.belongsTo(User, { foreignKey: 'user_id' });
-UserRating.belongsTo(Drama, { foreignKey: 'parameter_id' });
+User.hasMany(UserRating, { foreignKey: "user_id" });
+Drama.hasMany(UserRating, { foreignKey: "parameter_id" });
+UserRating.belongsTo(User, { foreignKey: "user_id" });
+UserRating.belongsTo(Drama, { foreignKey: "parameter_id" });
 
 module.exports = UserRating;
