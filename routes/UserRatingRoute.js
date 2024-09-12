@@ -5,7 +5,7 @@ const {
   getUserRatingById,
   getUserRatingByUser,
   updateUserRating,
-  deleteUserRating,
+  deleteUserRatings,
 } = require("../controllers/UserRatingController.js");
 
 const router = express.Router();
@@ -22,6 +22,6 @@ router.post("/user-rating", createUserRating);
 router.put("/user-rating/:id", updateUserRating);
 
 //Rute Delete
-router.delete("/user-rating/:id", deleteUserRating);
+router.delete("/user-rating", deleteUserRatings);
 
 module.exports = router;

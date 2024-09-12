@@ -1,6 +1,7 @@
 const UserRating = require("../models/UserRatingModel.js");
 const User = require("../models/UsersModel.js");
 const Drama = require("../models/DramaModel.js");
+const { Op } = require("sequelize");
 
 // Membuat data UserRating
 exports.createUserRating = async (req, res) => {
@@ -151,15 +152,33 @@ exports.updateUserRating = async (req, res) => {
 };
 
 // Menghapus data UserRating
-exports.deleteUserRating = async (req, res) => {
-  try {
-    const userRating = await UserRating.findByPk(req.params.id);
-    if (!userRating)
-      return res.status(404).json({ message: "User Rating Tidak DItemukan" });
+exports.deleteUserRatings = async (req, res) => {
+  const { user_id, parameter_ids } = req.body;
 
-    await userRating.destroy();
-    res.status(200).json({ message: "User Rating Berhasil dihapus" });
+  if (!user_id || !Array.isArray(parameter_ids) || parameter_ids.length === 0) {
+    return res.status(400).json({ message: "Invalid parameters" });
+  }
+
+  try {
+    const result = await UserRating.destroy({
+      where: {
+        user_id: user_id,
+        parameter_id: { [Op.in]: parameter_ids },
+      },
+    });
+
+    if (result > 0) {
+      return res
+        .status(200)
+        .json({ message: "User ratings berhasil dihapus." });
+    } else {
+      return res
+        .status(404)
+        .json({ message: "No matching user ratings found." });
+    }
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Error saat menghapus user ratings.", error });
   }
 };
