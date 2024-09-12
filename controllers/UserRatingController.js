@@ -69,20 +69,19 @@ exports.getUserRating = async (req, res) => {
   }
 };
 
-// Mendapatkan data user rating berdasarkan ID
 exports.getUserRatingById = async (req, res) => {
   try {
     const { ids } = req.query;
 
     if (!ids) {
-      return res.status(400).json({ message: "IDs diperlukan" });
+      return res.status(400).json({ message: "User ID diperlukan" });
     }
 
-    const idArray = ids.split(",");
+    const idArray = ids.includes(",") ? ids.split(",") : [ids];
 
     const userRatings = await UserRating.findAll({
       where: {
-        id: idArray,
+        user_id: idArray,
       },
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
@@ -94,7 +93,10 @@ exports.getUserRatingById = async (req, res) => {
       return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
     }
 
-    res.status(200).json(userRatings);
+    res.status(200).json({
+      message: "Rating berhasil diambil.",
+      data: userRatings,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -135,17 +137,57 @@ exports.getUserRatingByUser = async (req, res) => {
 // Update data UserRating
 exports.updateUserRating = async (req, res) => {
   const { rating, user_id, parameter_id } = req.body;
-  try {
-    const userRating = await UserRating.findByPk(req.params.id);
-    if (!userRating)
-      return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
 
-    await userRating.update({
-      rating,
-      user_id,
-      parameter_id,
-    });
-    res.status(200).json(userRating);
+  if (!user_id || !rating) {
+    return res.status(400).json({ message: "user_id dan rating diperlukan." });
+  }
+
+  try {
+    if (Array.isArray(parameter_id)) {
+      const updatedRatings = await Promise.all(
+        parameter_id.map(async (paramId) => {
+          const userRating = await UserRating.findOne({
+            where: {
+              user_id,
+              parameter_id: paramId,
+            },
+          });
+
+          if (userRating) {
+            return await userRating.update({ rating });
+          }
+          return null;
+        })
+      );
+
+      const validRatings = updatedRatings.filter((rating) => rating !== null);
+
+      if (validRatings.length === 0) {
+        return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
+      }
+
+      return res.status(200).json({
+        message: "User Rating berhasil diperbarui untuk beberapa parameter.",
+        data: validRatings,
+      });
+    } else {
+      const userRating = await UserRating.findOne({
+        where: {
+          user_id,
+          parameter_id,
+        },
+      });
+
+      if (!userRating) {
+        return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
+      }
+
+      await userRating.update({ rating });
+      res.status(200).json({
+        message: "User Rating berhasil diperbarui.",
+        data: userRating,
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

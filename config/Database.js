@@ -1,6 +1,6 @@
 const Sequelize = require("sequelize");
 
-const db = new Sequelize("db_gading", "root", "", {
+const db = new Sequelize("db_gading-cengkir", "root", "", {
   host: "localhost",
   dialect: "mysql",
 });
