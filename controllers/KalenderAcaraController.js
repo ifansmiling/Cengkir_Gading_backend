@@ -122,18 +122,32 @@ exports.updateKalenderAcara = async (req, res) => {
         file.path.replace(/\\/g, "/").replace(/^.*\/uploads/, "/uploads")
       );
 
-      oldFilePaths.forEach((filePath) => {
-        const fullPath = path.join(
+      for (const filePath of oldFilePaths) {
+        const cleanedFilePath = filePath.replace(/["\\]/g, "");
+
+        const absolutePath = path.resolve(
           __dirname,
           "..",
           "uploads",
-          filePath.replace(/^\/uploads\//, "")
+          cleanedFilePath.replace(/^\/uploads\//, "")
         );
-        console.log("Deleting file:", fullPath);
-        if (fs.existsSync(fullPath)) {
-          fs.unlinkSync(fullPath);
+        console.log("Deleting file:", absolutePath);
+
+        try {
+          await fs.access(absolutePath, fs.constants.F_OK);
+
+          await fs.unlink(absolutePath);
+          console.log(`File ${absolutePath} berhasil dihapus`);
+        } catch (err) {
+          if (err.code === "ENOENT") {
+            console.error(`File ${absolutePath} tidak ditemukan`);
+          } else {
+            console.error(
+              `Gagal menghapus file ${absolutePath}: ${err.message}`
+            );
+          }
         }
-      });
+      }
     } else {
       file_paths = oldFilePaths;
     }
@@ -163,13 +177,10 @@ exports.deleteKalenderAcara = async (req, res) => {
         .status(404)
         .json({ message: "Kalender Acara tidak ditemukan" });
 
-    // Hapus file yang terkait dengan kalenderAcara
     if (kalenderAcara.file_paths && kalenderAcara.file_paths.length > 0) {
       const file_paths_array = kalenderAcara.file_paths.split(",");
 
-      // Menggunakan async/await untuk penghapusan file
       for (const filePath of file_paths_array) {
-        // Menghilangkan karakter yang tidak diperlukan
         const cleanedFilePath = filePath.replace(/"/g, "").replace(/\\/g, "/");
 
         const absolutePath = path.resolve(
@@ -181,25 +192,24 @@ exports.deleteKalenderAcara = async (req, res) => {
         console.log(`Cek path file: ${absolutePath}`);
 
         try {
-          // Pastikan file ada sebelum dihapus
           await fs.access(absolutePath);
           await fs.unlink(absolutePath);
           console.log(`File ${absolutePath} berhasil dihapus`);
         } catch (err) {
-          if (err.code === 'ENOENT') {
+          if (err.code === "ENOENT") {
             console.error(`File ${absolutePath} tidak ditemukan`);
           } else {
-            console.error(`Gagal menghapus file ${absolutePath}: ${err.message}`);
+            console.error(
+              `Gagal menghapus file ${absolutePath}: ${err.message}`
+            );
           }
         }
       }
     }
 
-    // Menghapus record dari database
     await kalenderAcara.destroy();
     res.status(200).json({ message: "Kalender Acara berhasil dihapus" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
