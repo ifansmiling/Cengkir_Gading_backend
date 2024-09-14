@@ -29,6 +29,8 @@ exports.login = async (req, res) => {
       success: true,
       message: "Login berhasil",
       role: user.role,
+      nama: user.nama,
+      nim: user.nim,
       token,
     });
   } catch (error) {
