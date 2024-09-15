@@ -46,6 +46,24 @@ exports.getEvaluasiKarakterById = async (req, res) => {
   }
 };
 
+// Mendapatkan data Evaluasi Karakter berdasarkan UserID
+exports.getEvaluasiKarakterByUserId = async (req, res) => {
+  try {
+    const evaluasiKarakter = await EvaluasiKarakter.findAll({
+      where: { user_id: req.params.user_id },
+      include: [User],
+    });
+
+    if (evaluasiKarakter.length === 0) {
+      return res.status(200).json({ message: "Data belum ada" });
+    }
+
+    res.status(200).json(evaluasiKarakter);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Update data EvaluasiKarakter
 exports.updateEvaluasiKarakter = async (req, res) => {
   try {

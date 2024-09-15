@@ -31,6 +31,7 @@ exports.login = async (req, res) => {
       role: user.role,
       nama: user.nama,
       nim: user.nim,
+      userId: user.id,
       token,
     });
   } catch (error) {
