@@ -55,7 +55,7 @@ exports.getEvaluasiKarakterByUserId = async (req, res) => {
     });
 
     if (evaluasiKarakter.length === 0) {
-      return res.status(200).json({ message: "Data belum ada" });
+      return res.status(200).json({ message: "Belum Ada Evaluasi" });
     }
 
     res.status(200).json(evaluasiKarakter);
