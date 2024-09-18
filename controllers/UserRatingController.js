@@ -6,30 +6,32 @@ const { Op } = require("sequelize");
 // Membuat data UserRating
 exports.createUserRating = async (req, res) => {
   const { rating, user_id, parameter_id } = req.body;
+
   try {
-    if (Array.isArray(parameter_id)) {
+    // Pastikan parameter_id dan rating memiliki panjang yang sama
+    if (
+      Array.isArray(parameter_id) &&
+      Array.isArray(rating) &&
+      parameter_id.length === rating.length
+    ) {
       const userRatings = await Promise.all(
-        parameter_id.map(async (paramId) => {
+        parameter_id.map(async (paramId, index) => {
           return await UserRating.create({
-            rating,
+            rating: rating[index], // Gunakan rating yang sesuai dengan parameter_id
             user_id,
             parameter_id: paramId,
           });
         })
       );
+
       res.status(201).json({
         message: "Rating berhasil dibuat untuk beberapa parameter.",
         data: userRatings,
       });
     } else {
-      const userRating = await UserRating.create({
-        rating,
-        user_id,
-        parameter_id,
-      });
-      res.status(201).json({
-        message: "Rating berhasil dibuat.",
-        data: userRating,
+      return res.status(400).json({
+        error:
+          "Parameter ID dan Rating harus berupa array dengan panjang yang sama.",
       });
     }
   } catch (error) {
@@ -131,6 +133,31 @@ exports.getUserRatingByUser = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+// Mendapatkan data UserRating berdasarkan user_id
+exports.getUserRatingByUserId = async (req, res) => {
+  try {
+    // Mengambil semua rating yang terkait dengan user_id dari parameter URL
+    const userRatings = await UserRating.findAll({
+      where: { user_id: req.params.user_id }, // Memfilter berdasarkan user_id
+      include: [
+        { model: User, attributes: ["nama", "email", "nim"] },
+        { model: Drama, attributes: ["nama"] },
+      ],
+    });
+
+    // Jika tidak ada rating ditemukan
+    if (userRatings.length === 0) {
+      return res.status(200).json({ message: "Belum Ada Rating" });
+    }
+
+    // Mengembalikan data rating
+    res.status(200).json(userRatings);
+  } catch (error) {
+    // Mengembalikan error jika ada kesalahan
+    res.status(500).json({ message: error.message });
   }
 };
 
