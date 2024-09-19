@@ -1,5 +1,6 @@
 const fs = require("fs").promises;
 const path = require("path");
+const { Op } = require("sequelize");
 const KalenderAcara = require("../models/KalenderAcaraModel.js");
 
 // Membuat data KalenderAcara
@@ -210,6 +211,80 @@ exports.deleteKalenderAcara = async (req, res) => {
     await kalenderAcara.destroy();
     res.status(200).json({ message: "Kalender Acara berhasil dihapus" });
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Menghitung Perbulan KalenderAcara
+exports.getKalenderAcaraByMonth = async (req, res) => {
+  try {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+    const today = new Date();
+    const tahun = parseInt(req.query.tahun, 10) || today.getFullYear();
+
+    const kalenderAcaras = await KalenderAcara.findAll({
+      where: {
+        tanggal_event: {
+          [Op.between]: [new Date(tahun, 0, 1), new Date(tahun, 11, 31)],
+        },
+      },
+    });
+
+    const groupedEvents = kalenderAcaras.reduce((acc, event) => {
+      const date = new Date(event.tanggal_event);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+
+      if (!acc[year]) acc[year] = {};
+      if (!acc[year][month]) acc[year][month] = [];
+
+      const file_paths_array = event.file_paths
+        ? event.file_paths.split(",")
+        : [];
+      acc[year][month].push({
+        ...event.dataValues,
+        file_paths: file_paths_array.map(
+          (filePath) => `${baseUrl}${filePath.replace(/"/g, "")}`
+        ),
+      });
+
+      return acc;
+    }, {});
+
+    res.status(200).json(groupedEvents);
+  } catch (error) {
+    console.error("Error getting Kalender Acara:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getKalenderAcaraThisMonth = async (req, res) => {
+  try {
+    const today = new Date();
+    const bulanIni = today.getMonth();
+    const tahunIni = today.getFullYear();
+
+    const kalenderAcaras = await KalenderAcara.findAll({
+      where: {
+        tanggal_event: {
+          [Op.between]: [
+            new Date(tahunIni, bulanIni, 1),
+            new Date(tahunIni, bulanIni + 1, 0),
+          ],
+        },
+      },
+    });
+
+    const totalKalenderAcaraBulanIni = kalenderAcaras.length;
+
+    res.status(200).json({
+      year: tahunIni,
+      month: bulanIni + 1,
+      totalKalenderAcara: totalKalenderAcaraBulanIni,
+    });
+  } catch (error) {
+    console.error("Error getting Kalender Acara this month:", error);
     res.status(500).json({ message: error.message });
   }
 };

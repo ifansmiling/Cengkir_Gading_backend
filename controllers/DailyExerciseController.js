@@ -180,3 +180,14 @@ exports.deleteDailyExercise = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Mendapatkan total DailyExercise
+exports.getTotalDailyExercise = async (req, res) => {
+  try {
+    const total = await DailyExercise.count();
+
+    res.status(200).json({ total });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
