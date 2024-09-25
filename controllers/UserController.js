@@ -4,8 +4,17 @@ const argon2 = require("argon2");
 // Buat user
 exports.createUser = async (req, res) => {
   const { nama, email, kataSandi, nim, role } = req.body;
+
   try {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ error: "Email sudah terdaftar. Silakan gunakan email lain." });
+    }
+
     const hashedPassword = await argon2.hash(kataSandi);
+
     const user = await User.create({
       nama,
       email,
@@ -13,9 +22,12 @@ exports.createUser = async (req, res) => {
       nim,
       role,
     });
+
     res.status(201).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res
+      .status(500)
+      .json({ error: "Terjadi kesalahan pada server. Silakan coba lagi." });
   }
 };
 
