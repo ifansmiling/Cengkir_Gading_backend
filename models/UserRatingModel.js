@@ -30,14 +30,14 @@ const UserRating = db.define(
       onDelete: "CASCADE",
     },
     parameter_id: {
-      type: DataTypes.UUID, // Ubah dari JSON menjadi UUID
+      type: DataTypes.UUID,
       allowNull: false,
       references: {
-        model: Drama, // Merujuk ke model Drama
-        key: 'id', // Kolom id di tabel Drama
+        model: Drama,
+        key: "id",
       },
-      onDelete: 'CASCADE',
-    }
+      onDelete: "CASCADE",
+    },
   },
   {
     freezeTableName: true,
