@@ -78,38 +78,43 @@ exports.getUserRating = async (req, res) => {
   }
 };
 
-exports.getUserRatingById = async (req, res) => {
+// Mengambil rating berdasarkan user_id dan tanggal_rating
+exports.getUserRatingByid = async (req, res) => {
+  const { user_id, tanggal_rating } = req.query;
   try {
-    const { ids, tanggal_rating } = req.query;
-
-    if (!ids) {
-      return res.status(400).json({ message: "User ID diperlukan" });
+    if (!user_id || !tanggal_rating) {
+      return res.status(400).json({
+        error: "user_id dan tanggal_rating harus disertakan dalam query.",
+      });
     }
-
-    const idArray = ids.includes(",") ? ids.split(",") : [ids];
-
-    const whereCondition = {
-      user_id: idArray,
-      ...(tanggal_rating && { tanggal_rating: tanggal_rating }),
-    };
-
-    const userRatings = await UserRating.findAll({
-      where: whereCondition,
+    const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
+    const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
+    const rating = await UserRating.findOne({
+      where: {
+        user_id,
+        tanggal_rating: {
+          [Op.gte]: tanggalMulai,
+          [Op.lte]: tanggalAkhir,
+        },
+      },
       include: [
-        { model: User, attributes: ["nama", "email", "nim"] },
-        { model: Drama, attributes: ["nama"] },
+        {
+          model: Drama,
+          attributes: ["nama"],
+        },
       ],
     });
 
-    if (userRatings.length === 0) {
-      return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
+    if (rating) {
+      res.status(200).json({
+        message: "Berhasil mengambil rating pengguna.",
+        data: rating,
+      });
+    } else {
+      res.status(404).json({ message: "Tidak ada rating ditemukan." });
     }
-
-    res.status(200).json({
-      message: "Rating berhasil diambil.",
-      data: userRatings,
-    });
   } catch (error) {
+    console.error("Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

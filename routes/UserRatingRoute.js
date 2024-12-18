@@ -2,7 +2,7 @@ const express = require("express");
 const {
   createUserRating,
   getUserRating,
-  getUserRatingById,
+  getUserRatingByid,
   getUserRatingByUser,
   getUserRatingByUserId,
   updateUserRating,
@@ -13,8 +13,8 @@ const router = express.Router();
 
 //Rute Get
 router.get("/user-rating", getUserRating);
-router.get("/user-rating/rating", getUserRatingById);
-router.get("/user-rating/user/:id", getUserRatingByUser);
+router.get("/user-rating/rating/user/tanggal", getUserRatingByid);
+router.get("/user-rating/user/rating", getUserRatingByUser);
 router.get("/userRating/user/rating/:user_id", getUserRatingByUserId);
 
 //Rute Post
