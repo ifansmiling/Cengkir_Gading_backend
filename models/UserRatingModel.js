@@ -20,6 +20,11 @@ const UserRating = db.define(
         max: 100,
       },
     },
+    tanggal_rating: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
     user_id: {
       type: DataTypes.UUID,
       allowNull: false,

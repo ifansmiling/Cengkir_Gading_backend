@@ -5,21 +5,27 @@ const { Op } = require("sequelize");
 
 // Membuat data UserRating
 exports.createUserRating = async (req, res) => {
-  const { rating, user_id, parameter_id } = req.body;
+  const { rating, user_id, parameter_id, tanggal_rating } = req.body;
 
   try {
-    // Pastikan parameter_id dan rating memiliki panjang yang sama
+    // Pastikan parameter_id, rating, dan tanggal_rating memiliki panjang yang sama
     if (
       Array.isArray(parameter_id) &&
       Array.isArray(rating) &&
-      parameter_id.length === rating.length
+      Array.isArray(tanggal_rating) &&
+      parameter_id.length === rating.length &&
+      rating.length === tanggal_rating.length
     ) {
       const userRatings = await Promise.all(
         parameter_id.map(async (paramId, index) => {
+          // Mengonversi tanggal ke format Date
+          const tanggal = new Date(tanggal_rating[index]);
+
           return await UserRating.create({
-            rating: rating[index], // Gunakan rating yang sesuai dengan parameter_id
+            rating: rating[index],
             user_id,
             parameter_id: paramId,
+            tanggal_rating: tanggal, // Menyimpan tanggal sebagai objek Date
           });
         })
       );
@@ -31,7 +37,7 @@ exports.createUserRating = async (req, res) => {
     } else {
       return res.status(400).json({
         error:
-          "Parameter ID dan Rating harus berupa array dengan panjang yang sama.",
+          "Parameter ID, Rating, dan Tanggal Rating harus berupa array dengan panjang yang sama.",
       });
     }
   } catch (error) {
@@ -42,11 +48,12 @@ exports.createUserRating = async (req, res) => {
 // Mendapatkan semua data UserRating
 exports.getUserRating = async (req, res) => {
   try {
-    const { parameter_ids } = req.query;
+    const { parameter_ids, tanggal_rating } = req.query;
 
-    const whereCondition = parameter_ids
-      ? { parameter_id: parameter_ids.split(",") }
-      : {};
+    const whereCondition = {
+      ...(parameter_ids && { parameter_id: parameter_ids.split(",") }),
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }), // Menambahkan kondisi tanggal_rating
+    };
 
     const userRatings = await UserRating.findAll({
       where: whereCondition,
@@ -73,7 +80,7 @@ exports.getUserRating = async (req, res) => {
 
 exports.getUserRatingById = async (req, res) => {
   try {
-    const { ids } = req.query;
+    const { ids, tanggal_rating } = req.query;
 
     if (!ids) {
       return res.status(400).json({ message: "User ID diperlukan" });
@@ -81,10 +88,13 @@ exports.getUserRatingById = async (req, res) => {
 
     const idArray = ids.includes(",") ? ids.split(",") : [ids];
 
+    const whereCondition = {
+      user_id: idArray,
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }),
+    };
+
     const userRatings = await UserRating.findAll({
-      where: {
-        user_id: idArray,
-      },
+      where: whereCondition,
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
         { model: Drama, attributes: ["nama"] },
@@ -104,17 +114,23 @@ exports.getUserRatingById = async (req, res) => {
   }
 };
 
-//Mendpatakan user rating berdasarkan id dari user
+// Mendapatkan user rating berdasarkan id dari user
 exports.getUserRatingByUser = async (req, res) => {
   try {
     const { id } = req.params;
+    const { tanggal_rating } = req.query;
 
     if (!id) {
       return res.status(400).json({ message: "User ID harus disediakan." });
     }
 
+    const whereCondition = {
+      user_id: id,
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }),
+    };
+
     const userRatings = await UserRating.findAll({
-      where: { user_id: id },
+      where: whereCondition,
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
         { model: Drama, attributes: ["nama"] },
@@ -139,43 +155,48 @@ exports.getUserRatingByUser = async (req, res) => {
 // Mendapatkan data UserRating berdasarkan user_id
 exports.getUserRatingByUserId = async (req, res) => {
   try {
-    // Mengambil semua rating yang terkait dengan user_id dari parameter URL
+    const { tanggal_rating } = req.query;
+
+    const whereCondition = {
+      user_id: req.params.user_id,
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }),
+    };
+
     const userRatings = await UserRating.findAll({
-      where: { user_id: req.params.user_id }, // Memfilter berdasarkan user_id
+      where: whereCondition,
       include: [
         { model: User, attributes: ["nama", "email", "nim"] },
         { model: Drama, attributes: ["nama"] },
       ],
     });
 
-    // Jika tidak ada rating ditemukan
     if (userRatings.length === 0) {
       return res.status(200).json({ message: "Belum Ada Rating" });
     }
 
-    // Mengembalikan data rating
     res.status(200).json(userRatings);
   } catch (error) {
-    // Mengembalikan error jika ada kesalahan
     res.status(500).json({ message: error.message });
   }
 };
 
 // Update data UserRating
 exports.updateUserRating = async (req, res) => {
-  const { rating, user_id, parameter_id } = req.body;
+  const { rating, user_id, parameter_id, tanggal_rating } = req.body;
 
-  if (!user_id || !rating || !parameter_id) {
-    return res
-      .status(400)
-      .json({ message: "user_id, parameter_id, dan rating diperlukan." });
+  if (!user_id || !rating || !parameter_id || !tanggal_rating) {
+    return res.status(400).json({
+      message: "user_id, parameter_id, rating, dan tanggal_rating diperlukan.",
+    });
   }
 
   try {
     if (
       Array.isArray(parameter_id) &&
       Array.isArray(rating) &&
-      parameter_id.length === rating.length
+      Array.isArray(tanggal_rating) &&
+      parameter_id.length === rating.length &&
+      rating.length === tanggal_rating.length
     ) {
       const updatedRatings = await Promise.all(
         parameter_id.map(async (paramId, index) => {
@@ -187,8 +208,12 @@ exports.updateUserRating = async (req, res) => {
           });
 
           if (userRating) {
-            // Update rating sesuai dengan index yang ada pada array rating
-            return await userRating.update({ rating: rating[index] });
+            // Mengonversi tanggal ke format Date
+            const tanggal = new Date(tanggal_rating[index]);
+            return await userRating.update({
+              rating: rating[index],
+              tanggal_rating: tanggal, // Update tanggal_rating
+            });
           }
           return null;
         })
@@ -205,11 +230,9 @@ exports.updateUserRating = async (req, res) => {
         data: validRatings,
       });
     } else {
-      return res
-        .status(400)
-        .json({
-          message: "Parameter dan rating tidak valid atau tidak sesuai.",
-        });
+      return res.status(400).json({
+        message: "Parameter dan rating tidak valid atau tidak sesuai.",
+      });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -218,18 +241,21 @@ exports.updateUserRating = async (req, res) => {
 
 // Menghapus data UserRating
 exports.deleteUserRatings = async (req, res) => {
-  const { user_id, parameter_ids } = req.body;
+  const { user_id, parameter_ids, tanggal_rating } = req.body;
 
   if (!user_id || !Array.isArray(parameter_ids) || parameter_ids.length === 0) {
     return res.status(400).json({ message: "Invalid parameters" });
   }
 
   try {
+    const whereCondition = {
+      user_id: user_id,
+      parameter_id: { [Op.in]: parameter_ids },
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }), // Menambahkan kondisi tanggal_rating
+    };
+
     const result = await UserRating.destroy({
-      where: {
-        user_id: user_id,
-        parameter_id: { [Op.in]: parameter_ids },
-      },
+      where: whereCondition,
     });
 
     if (result > 0) {

@@ -23,6 +23,10 @@ const EvaluasiKarakter = db.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    tanggal_evaluasi: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
     user_id: {
       type: DataTypes.UUID,
       allowNull: false,
