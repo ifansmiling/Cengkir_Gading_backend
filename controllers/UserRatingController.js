@@ -5,41 +5,38 @@ const { Op } = require("sequelize");
 
 // Membuat data UserRating
 exports.createUserRating = async (req, res) => {
-  const { rating, user_id, parameter_id, tanggal_rating } = req.body;
+  const { user_id, ratings } = req.body;
 
   try {
-    // Pastikan parameter_id, rating, dan tanggal_rating memiliki panjang yang sama
-    if (
-      Array.isArray(parameter_id) &&
-      Array.isArray(rating) &&
-      Array.isArray(tanggal_rating) &&
-      parameter_id.length === rating.length &&
-      rating.length === tanggal_rating.length
-    ) {
-      const userRatings = await Promise.all(
-        parameter_id.map(async (paramId, index) => {
-          // Mengonversi tanggal ke format Date
-          const tanggal = new Date(tanggal_rating[index]);
-
-          return await UserRating.create({
-            rating: rating[index],
-            user_id,
-            parameter_id: paramId,
-            tanggal_rating: tanggal, // Menyimpan tanggal sebagai objek Date
-          });
-        })
-      );
-
-      res.status(201).json({
-        message: "Rating berhasil dibuat untuk beberapa parameter.",
-        data: userRatings,
-      });
-    } else {
+    // Validasi input
+    if (!Array.isArray(ratings) || ratings.length === 0) {
       return res.status(400).json({
-        error:
-          "Parameter ID, Rating, dan Tanggal Rating harus berupa array dengan panjang yang sama.",
+        error: "Ratings harus berupa array dan tidak boleh kosong.",
       });
     }
+
+    // Proses penyimpanan data
+    const userRatings = await Promise.all(
+      ratings.map(async (ratingData) => {
+        const { parameter_id, rating, tanggal_rating } = ratingData;
+        if (!parameter_id || !rating || !tanggal_rating) {
+          throw new Error("Data rating tidak lengkap.");
+        }
+
+        // Simpan ke database
+        return await UserRating.create({
+          rating,
+          user_id,
+          parameter_id,
+          tanggal_rating: new Date(tanggal_rating),
+        });
+      })
+    );
+
+    res.status(201).json({
+      message: "Rating berhasil dibuat untuk beberapa parameter.",
+      data: userRatings,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -87,9 +84,11 @@ exports.getUserRatingByid = async (req, res) => {
         error: "user_id dan tanggal_rating harus disertakan dalam query.",
       });
     }
+
     const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
     const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
-    const rating = await UserRating.findOne({
+
+    const ratings = await UserRating.findAll({
       where: {
         user_id,
         tanggal_rating: {
@@ -102,13 +101,17 @@ exports.getUserRatingByid = async (req, res) => {
           model: Drama,
           attributes: ["nama"],
         },
+        {
+          model: User, // Relasi ke tabel User
+          attributes: ["nama"], // Ambil nama pengguna
+        },
       ],
     });
 
-    if (rating) {
+    if (ratings.length > 0) {
       res.status(200).json({
         message: "Berhasil mengambil rating pengguna.",
-        data: rating,
+        data: ratings, // Mengembalikan array hasil findAll
       });
     } else {
       res.status(404).json({ message: "Tidak ada rating ditemukan." });
@@ -244,37 +247,51 @@ exports.updateUserRating = async (req, res) => {
   }
 };
 
-// Menghapus data UserRating
-exports.deleteUserRatings = async (req, res) => {
-  const { user_id, parameter_ids, tanggal_rating } = req.body;
+// Menghapus semua rating untuk user_id pada tanggal tertentu beserta parameter terkait
+exports.deleteUserRatingsByDate = async (req, res) => {
+  const { user_id, tanggal_rating } = req.body;
 
-  if (!user_id || !Array.isArray(parameter_ids) || parameter_ids.length === 0) {
-    return res.status(400).json({ message: "Invalid parameters" });
+  // Validasi input
+  if (!user_id || !tanggal_rating) {
+    return res.status(400).json({
+      message:
+        "user_id dan tanggal_rating harus disertakan dalam body request.",
+    });
   }
 
   try {
+    // Mengonversi tanggal untuk membuat rentang waktu dari awal hingga akhir hari
+    const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
+    const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
+
+    // Menyusun kondisi pencarian berdasarkan user_id dan tanggal_rating
     const whereCondition = {
       user_id: user_id,
-      parameter_id: { [Op.in]: parameter_ids },
-      ...(tanggal_rating && { tanggal_rating: tanggal_rating }), // Menambahkan kondisi tanggal_rating
+      tanggal_rating: {
+        [Op.gte]: tanggalMulai, // Lebih besar atau sama dengan tanggalMulai
+        [Op.lte]: tanggalAkhir, // Lebih kecil atau sama dengan tanggalAkhir
+      },
     };
 
+    // Menghapus rating berdasarkan kondisi yang ditentukan
     const result = await UserRating.destroy({
       where: whereCondition,
     });
 
+    // Mengirimkan respons berdasarkan hasil penghapusan
     if (result > 0) {
-      return res
-        .status(200)
-        .json({ message: "User ratings berhasil dihapus." });
+      return res.status(200).json({
+        message: `Semua rating untuk user_id ${user_id} pada tanggal ${tanggal_rating} berhasil dihapus.`,
+      });
     } else {
-      return res
-        .status(404)
-        .json({ message: "No matching user ratings found." });
+      return res.status(404).json({
+        message: `Tidak ada rating ditemukan untuk user_id ${user_id} pada tanggal ${tanggal_rating}.`,
+      });
     }
   } catch (error) {
+    // Menangani error jika terjadi kesalahan dalam proses penghapusan
     return res
       .status(500)
-      .json({ message: "Error saat menghapus user ratings.", error });
+      .json({ message: "Terjadi kesalahan saat menghapus rating.", error });
   }
 };
