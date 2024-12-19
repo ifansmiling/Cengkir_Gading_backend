@@ -201,58 +201,56 @@ exports.getUserRatingByUserId = async (req, res) => {
 
 // Update data UserRating
 exports.updateUserRating = async (req, res) => {
-  const { rating, user_id, parameter_id, tanggal_rating } = req.body;
-
-  if (!user_id || !rating || !parameter_id || !tanggal_rating) {
-    return res.status(400).json({
-      message: "user_id, parameter_id, rating, dan tanggal_rating diperlukan.",
-    });
-  }
+  const { user_id, ratings } = req.body;
 
   try {
-    if (
-      Array.isArray(parameter_id) &&
-      Array.isArray(rating) &&
-      Array.isArray(tanggal_rating) &&
-      parameter_id.length === rating.length &&
-      rating.length === tanggal_rating.length
-    ) {
-      const updatedRatings = await Promise.all(
-        parameter_id.map(async (paramId, index) => {
-          const userRating = await UserRating.findOne({
-            where: {
-              user_id,
-              parameter_id: paramId,
-            },
-          });
-
-          if (userRating) {
-            // Mengonversi tanggal ke format Date
-            const tanggal = new Date(tanggal_rating[index]);
-            return await userRating.update({
-              rating: rating[index],
-              tanggal_rating: tanggal, // Update tanggal_rating
-            });
-          }
-          return null;
-        })
-      );
-
-      const validRatings = updatedRatings.filter((rating) => rating !== null);
-
-      if (validRatings.length === 0) {
-        return res.status(404).json({ message: "User Rating Tidak Ditemukan" });
-      }
-
-      return res.status(200).json({
-        message: "User Rating berhasil diperbarui untuk beberapa parameter.",
-        data: validRatings,
-      });
-    } else {
+    // Validasi input
+    if (!Array.isArray(ratings) || ratings.length === 0) {
       return res.status(400).json({
-        message: "Parameter dan rating tidak valid atau tidak sesuai.",
+        error: "Ratings harus berupa array dan tidak boleh kosong.",
       });
     }
+
+    // Proses pembaruan data
+    const updatedRatings = await Promise.all(
+      ratings.map(async (ratingData) => {
+        const { parameter_id, rating, tanggal_rating } = ratingData;
+
+        if (!parameter_id || !rating || !tanggal_rating) {
+          throw new Error("Data rating tidak lengkap.");
+        }
+
+        // Cari user rating berdasarkan parameter_id dan user_id
+        const userRating = await UserRating.findOne({
+          where: { user_id, parameter_id },
+        });
+
+        if (userRating) {
+          // Jika ditemukan, update data
+          return await userRating.update({
+            rating,
+            tanggal_rating: new Date(tanggal_rating),
+          });
+        }
+
+        // Jika tidak ditemukan, kembalikan null
+        return null;
+      })
+    );
+
+    // Filter hasil pembaruan yang berhasil
+    const validRatings = updatedRatings.filter((rating) => rating !== null);
+
+    if (validRatings.length === 0) {
+      return res.status(404).json({
+        message: "Tidak ada User Rating yang ditemukan untuk diperbarui.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "User Rating berhasil diperbarui untuk beberapa parameter.",
+      data: validRatings,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
