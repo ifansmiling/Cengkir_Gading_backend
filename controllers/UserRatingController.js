@@ -75,19 +75,30 @@ exports.getUserRating = async (req, res) => {
   }
 };
 
-// Mengambil rating berdasarkan user_id dan tanggal_rating
+const isValidDate = (dateString) => {
+  const date = new Date(dateString);
+  return !isNaN(date.getTime());
+};
+
 exports.getUserRatingByid = async (req, res) => {
   const { user_id, tanggal_rating } = req.query;
+
+  if (!user_id || !tanggal_rating) {
+    return res.status(400).json({
+      error: "user_id dan tanggal_rating harus disertakan dalam query.",
+    });
+  }
+
+  if (!isValidDate(tanggal_rating)) {
+    return res.status(400).json({
+      error: "Format tanggal_rating tidak valid. Gunakan format YYYY-MM-DD.",
+    });
+  }
+
+  const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
+  const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
+
   try {
-    if (!user_id || !tanggal_rating) {
-      return res.status(400).json({
-        error: "user_id dan tanggal_rating harus disertakan dalam query.",
-      });
-    }
-
-    const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
-    const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
-
     const ratings = await UserRating.findAll({
       where: {
         user_id,
@@ -102,8 +113,8 @@ exports.getUserRatingByid = async (req, res) => {
           attributes: ["nama"],
         },
         {
-          model: User, // Relasi ke tabel User
-          attributes: ["nama"], // Ambil nama pengguna
+          model: User,
+          attributes: ["nama"],
         },
       ],
     });
@@ -111,7 +122,7 @@ exports.getUserRatingByid = async (req, res) => {
     if (ratings.length > 0) {
       res.status(200).json({
         message: "Berhasil mengambil rating pengguna.",
-        data: ratings, // Mengembalikan array hasil findAll
+        data: ratings,
       });
     } else {
       res.status(404).json({ message: "Tidak ada rating ditemukan." });
