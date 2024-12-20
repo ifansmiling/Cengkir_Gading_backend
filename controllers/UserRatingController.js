@@ -8,14 +8,12 @@ exports.createUserRating = async (req, res) => {
   const { user_id, ratings } = req.body;
 
   try {
-    // Validasi input
     if (!Array.isArray(ratings) || ratings.length === 0) {
       return res.status(400).json({
         error: "Ratings harus berupa array dan tidak boleh kosong.",
       });
     }
 
-    // Proses penyimpanan data
     const userRatings = await Promise.all(
       ratings.map(async (ratingData) => {
         const { parameter_id, rating, tanggal_rating } = ratingData;
@@ -23,7 +21,6 @@ exports.createUserRating = async (req, res) => {
           throw new Error("Data rating tidak lengkap.");
         }
 
-        // Simpan ke database
         return await UserRating.create({
           rating,
           user_id,
@@ -49,7 +46,7 @@ exports.getUserRating = async (req, res) => {
 
     const whereCondition = {
       ...(parameter_ids && { parameter_id: parameter_ids.split(",") }),
-      ...(tanggal_rating && { tanggal_rating: tanggal_rating }), // Menambahkan kondisi tanggal_rating
+      ...(tanggal_rating && { tanggal_rating: tanggal_rating }),
     };
 
     const userRatings = await UserRating.findAll({
@@ -75,13 +72,67 @@ exports.getUserRating = async (req, res) => {
   }
 };
 
+// Mendapatkan semua riwayat rating untuk user tertentu beserta drama terkait
+exports.getAllUserRatings = async (req, res) => {
+  const { user_id } = req.params;
+
+  // Validasi jika user_id tidak disertakan
+  if (!user_id) {
+    return res.status(400).json({
+      message: "User ID harus disertakan dalam parameter.",
+    });
+  }
+
+  try {
+    // Mencari semua rating untuk user berdasarkan user_id
+    const userRatings = await UserRating.findAll({
+      where: { user_id },
+      include: [
+        {
+          model: User,
+          attributes: ["nama", "email", "nim"], // Menampilkan informasi user
+        },
+        {
+          model: Drama,
+          attributes: ["nama"], // Menampilkan nama drama terkait
+        },
+      ],
+    });
+
+    // Jika tidak ada rating ditemukan untuk user_id tersebut
+    if (userRatings.length === 0) {
+      return res.status(404).json({
+        message: "Tidak ada rating ditemukan untuk user ID yang diberikan.",
+      });
+    }
+
+    // Mengirimkan data rating yang ditemukan
+    res.status(200).json({
+      message: "Riwayat rating berhasil diambil.",
+      data: userRatings,
+    });
+  } catch (error) {
+    // Menangani error jika terjadi kesalahan dalam pengambilan data
+    res.status(500).json({
+      message: "Terjadi kesalahan saat mengambil riwayat rating.",
+      error: error.message,
+    });
+  }
+};
+
 const isValidDate = (dateString) => {
+  // Pastikan format tanggal adalah YYYY-MM-DD menggunakan regex
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+
   const date = new Date(dateString);
   return !isNaN(date.getTime());
 };
 
 exports.getUserRatingByid = async (req, res) => {
   const { user_id, tanggal_rating } = req.query;
+
+  console.log("Query parameters diterima:", { user_id, tanggal_rating });
 
   if (!user_id || !tanggal_rating) {
     return res.status(400).json({
@@ -95,8 +146,8 @@ exports.getUserRatingByid = async (req, res) => {
     });
   }
 
-  const tanggalMulai = new Date(tanggal_rating).setHours(0, 0, 0, 0);
-  const tanggalAkhir = new Date(tanggal_rating).setHours(23, 59, 59, 999);
+  const tanggalMulai = new Date(`${tanggal_rating}T00:00:00Z`);
+  const tanggalAkhir = new Date(`${tanggal_rating}T23:59:59Z`);
 
   try {
     const ratings = await UserRating.findAll({
@@ -108,14 +159,8 @@ exports.getUserRatingByid = async (req, res) => {
         },
       },
       include: [
-        {
-          model: Drama,
-          attributes: ["nama"],
-        },
-        {
-          model: User,
-          attributes: ["nama"],
-        },
+        { model: Drama, attributes: ["nama"] },
+        { model: User, attributes: ["nama"] },
       ],
     });
 

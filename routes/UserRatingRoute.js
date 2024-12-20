@@ -5,6 +5,7 @@ const {
   getUserRatingByid,
   getUserRatingByUser,
   getUserRatingByUserId,
+  getAllUserRatings,
   updateUserRating,
   deleteUserRatingsByDate,
 } = require("../controllers/UserRatingController.js");
@@ -16,6 +17,7 @@ router.get("/user-rating", getUserRating);
 router.get("/user-rating/rating/user/tanggal", getUserRatingByid);
 router.get("/user-rating/user/rating", getUserRatingByUser);
 router.get("/userRating/user/rating/:user_id", getUserRatingByUserId);
+router.get("/userRating/user/rating/riwayat/:user_id", getAllUserRatings);
 
 //Rute Post
 router.post("/user-rating", createUserRating);

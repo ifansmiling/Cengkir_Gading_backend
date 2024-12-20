@@ -4,12 +4,14 @@ const User = require("../models/UsersModel.js");
 // Membuat data EvaluasiKarakter
 exports.createEvaluasiKarakter = async (req, res) => {
   try {
-    const { judul_evaluasi, evaluasi, kekurangan, user_id } = req.body;
+    const { judul_evaluasi, evaluasi, kekurangan, user_id, tanggal_evaluasi } =
+      req.body;
     const newEvaluasiKarakter = await EvaluasiKarakter.create({
       judul_evaluasi,
       evaluasi,
       kekurangan,
       user_id,
+      tanggal_evaluasi,
     });
     res.status(201).json(newEvaluasiKarakter);
   } catch (error) {
@@ -21,7 +23,7 @@ exports.createEvaluasiKarakter = async (req, res) => {
 exports.getEvaluasiKarakter = async (req, res) => {
   try {
     const evaluasiKarakters = await EvaluasiKarakter.findAll({
-      include: [User],
+      include: [User], //
     });
     res.status(200).json(evaluasiKarakters);
   } catch (error) {
@@ -64,10 +66,30 @@ exports.getEvaluasiKarakterByUserId = async (req, res) => {
   }
 };
 
+// Mendapatkan riwayat evaluasi berdasarkan UserID
+exports.getRiwayatEvaluasiByUserId = async (req, res) => {
+  try {
+    const riwayatEvaluasi = await EvaluasiKarakter.findAll({
+      where: { user_id: req.params.user_id },
+      include: [User],
+      order: [["tanggal_evaluasi", "DESC"]],
+    });
+
+    if (riwayatEvaluasi.length === 0) {
+      return res.status(200).json({ message: "Belum Ada Riwayat Evaluasi" });
+    }
+
+    res.status(200).json(riwayatEvaluasi);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Update data EvaluasiKarakter
 exports.updateEvaluasiKarakter = async (req, res) => {
   try {
-    const { judul_evaluasi, evaluasi, kekurangan, user_id } = req.body;
+    const { judul_evaluasi, evaluasi, kekurangan, user_id, tanggal_evaluasi } =
+      req.body;
     const evaluasiKarakter = await EvaluasiKarakter.findOne({
       where: { id: req.params.id },
     });
@@ -80,6 +102,7 @@ exports.updateEvaluasiKarakter = async (req, res) => {
     evaluasiKarakter.evaluasi = evaluasi;
     evaluasiKarakter.kekurangan = kekurangan;
     evaluasiKarakter.user_id = user_id;
+    evaluasiKarakter.tanggal_evaluasi = tanggal_evaluasi;
     await evaluasiKarakter.save();
 
     res.status(200).json(evaluasiKarakter);

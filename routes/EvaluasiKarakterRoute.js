@@ -4,6 +4,7 @@ const {
   getEvaluasiKarakter,
   getEvaluasiKarakterByUserId,
   getEvaluasiKarakterById,
+  getRiwayatEvaluasiByUserId,
   updateEvaluasiKarakter,
   deleteEvaluasiKarakter,
 } = require("../controllers/EvaluasiKarakterController.js");
@@ -14,6 +15,7 @@ const router = express.Router();
 router.get("/evaluasiKarakter", getEvaluasiKarakter);
 router.get("/evaluasiKarakter/:id", getEvaluasiKarakterById);
 router.get("/evaluasiKarakter/user/:user_id", getEvaluasiKarakterByUserId);
+router.get("/evaluasiKarakter/user/riwayat/:user_id", getRiwayatEvaluasiByUserId);
 
 //Rute Post
 router.post("/evaluasiKarakter", createEvaluasiKarakter);
