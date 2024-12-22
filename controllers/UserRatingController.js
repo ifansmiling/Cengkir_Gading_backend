@@ -261,24 +261,21 @@ exports.updateUserRating = async (req, res) => {
       ratings.map(async (ratingData) => {
         const { parameter_id, rating, tanggal_rating } = ratingData;
 
-        if (!parameter_id || !rating || !tanggal_rating) {
+        if (!parameter_id || !tanggal_rating) {
           throw new Error("Data rating tidak lengkap.");
         }
 
-        // Cari user rating berdasarkan parameter_id dan user_id
         const userRating = await UserRating.findOne({
           where: { user_id, parameter_id },
         });
 
         if (userRating) {
-          // Jika ditemukan, update data
           return await userRating.update({
-            rating,
+            rating: rating || userRating.rating, // gunakan rating lama jika kosong
             tanggal_rating: new Date(tanggal_rating),
           });
         }
 
-        // Jika tidak ditemukan, kembalikan null
         return null;
       })
     );
